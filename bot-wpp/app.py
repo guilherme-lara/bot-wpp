@@ -44,16 +44,21 @@ def verify_webhook():
 @app.route("/webhook", methods=["POST"])
 def receive_message():
     data = request.json
+    
+    # Ignora notificações de status (lido, entregue, enviado)
+    if "messages" not in data.get("entry", [{}])[0].get("changes", [{}])[0].get("value", {}):
+        return "ok", 200
 
     try:
         message = data["entry"][0]["changes"][0]["value"]["messages"][0]
-        user_number = message["from"]
-        text = message["text"]["body"].strip()
-    except KeyError:
-        return "ok", 200
-
-    resposta = gerar_resposta(text)
-    enviar_mensagem(user_number, resposta)
+        if message["type"] == "text":
+            user_number = message["from"]
+            text = message["text"]["body"].strip()
+            
+            resposta = gerar_resposta(text)
+            enviar_mensagem(user_number, resposta)
+    except Exception as e:
+        print(f"Erro ao processar: {e}")
 
     return "ok", 200
 
